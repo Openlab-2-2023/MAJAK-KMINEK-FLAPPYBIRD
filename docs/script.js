@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 
-let bird = { x: 50, y: canvas.height / 2, radius: 15, velocity: 0, started: false };
+let bird = { x: 183, y: canvas.height / 2, radius: 15, velocity: 0, started: false };
 const gravity = 0.5;
 const jumpStrength = -8;
 const pipeGap = 150;  
