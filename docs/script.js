@@ -4,6 +4,9 @@ const ctx = canvas.getContext("2d");
 const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 
+const groundImg = new Image();
+groundImg.src = "base.png";
+
 let bird = { x: 183, y: canvas.height / 2, radius: 15, velocity: 0, started: false };
 const gravity = 0.5;
 const jumpStrength = -8;
@@ -16,6 +19,9 @@ const pipeLoc = () => (Math.random() * ((canvas.height - (pipeGap + pipeWidth)) 
 let index = 0;
 let score = 0;
 let bestScore = localStorage.getItem("bestScore") || 0;
+
+const groundHeight = 50;
+let groundX = 0;
 
 let isPageReloaded = false;
 
@@ -46,7 +52,7 @@ document.addEventListener("keydown", (event) => {
 function checkCollision() {
     if (
         bird.y - bird.radius <= 0 || 
-        bird.y + bird.radius >= canvas.height ||
+        bird.y + bird.radius >= canvas.height - groundHeight ||
         pipes.some(pipe => 
             bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth &&
             (bird.y - bird.radius < pipe[1] || bird.y + bird.radius > pipe[1] + pipeGap)
@@ -66,9 +72,10 @@ function update() {
     bird.velocity += gravity;
     bird.y += bird.velocity;
 
-    if (bird.y + bird.radius >= canvas.height) {
-        bird.y = canvas.height - bird.radius;
+    if (bird.y + bird.radius >= canvas.height - groundHeight) {
+        bird.y = canvas.height - groundHeight - bird.radius;
         bird.velocity = 0;
+        resetGame();
     }
 
     pipes.forEach(pipe => pipe[0] -= 2);
@@ -86,6 +93,11 @@ function update() {
             updateScoreDisplay();
         }
     });
+
+    groundX -= 2;
+    if (groundX <= -canvas.width) {
+        groundX = 0;
+    }
 
     checkCollision();
 }
@@ -107,6 +119,9 @@ function draw() {
     });
 
     ctx.drawImage(img, 432, Math.floor((index % 9) / 3) * size[1], ...size, bird.x, bird.y, ...size);
+
+    ctx.drawImage(groundImg, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
+    ctx.drawImage(groundImg, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
 
     index++;
 
