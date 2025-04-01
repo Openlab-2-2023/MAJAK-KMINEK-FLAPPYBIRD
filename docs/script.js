@@ -37,9 +37,9 @@ buttons.forEach((btn) => {
 
 const setDifficultyPipeGap = () => {
     if (difficulty === "easy") {
-        pipeGap = 150;
+        pipeGap = 170;
     } else if (difficulty === "medium") {
-        pipeGap = 135;
+        pipeGap = 150;
     }
 };
 
@@ -62,16 +62,44 @@ document.addEventListener("keydown", (event) => {
 });
 
 function checkCollision() {
-    let hitPipe = pipes.some(pipe => 
-        bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth &&
-        (bird.y - bird.radius < pipe[1] || bird.y + bird.radius > pipe[1] + pipeGap)
-    );
+    let hitTopPipe = false;
+    let hitBottomPipe = false;
     
-    if (hitPipe || bird.y - bird.radius <= 0 || bird.y + bird.radius >= canvas.height - groundHeight) {
+    // Kontrola kolízií s potrubím
+    pipes.forEach(pipe => {
+        // Kolízia s horným potrubím
+        if (bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth &&
+            bird.y - bird.radius < pipe[1]) {
+            hitTopPipe = true;
+        }
+        
+        // Kolízia s dolným potrubím
+        if (bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth &&
+            bird.y + bird.radius > pipe[1] + pipeGap) {
+            hitBottomPipe = true;
+        }
+    });
+    
+    // Kolízia so zemou alebo stropom
+    const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
+    const hitCeiling = bird.y - bird.radius <= 0;
+    
+    if (hitTopPipe || hitBottomPipe || hitGround || hitCeiling) {
         if (difficulty === "easy" && bird.lives > 1) {
             bird.lives--;
-            bird.velocity = jumpStrength / 2;
-            bird.y -= 20;
+            
+            // Odrazový efekt
+            if (hitTopPipe) {
+                bird.velocity = Math.abs(bird.velocity) * 0.2; // Odraz dole
+                bird.y += 5; // Posun dole
+            } 
+            else if (hitBottomPipe || hitGround) {
+                bird.velocity = -Math.abs(bird.velocity) * 0.5; // Odraz hore
+                bird.y -= 5; // Posun hore
+            }
+            else if (hitCeiling) {
+                bird.velocity = 1.5; // Začne padať
+            }
         } else {
             if (score > bestScore) {
                 bestScore = score;
@@ -123,13 +151,11 @@ function draw() {
     ctx.drawImage(groundImg, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
     ctx.drawImage(groundImg, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
     
-    
     const heartSize = 20;
     const heartSpacing = 5;
     for (let i = 0; i < bird.lives; i++) {
-        
-        ctx.fillStyle = "red";
-        ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);    }
+        ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
+    }
     
     index++;
     update();
