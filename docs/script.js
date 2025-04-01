@@ -5,6 +5,8 @@ const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 const groundImg = new Image();
 groundImg.src = "base.png";
+const heartImg = new Image();
+heartImg.src = "image.png";
 
 let bird = { x: 183, y: canvas.height / 2, radius: 15, velocity: 0, started: false, lives: 3 };
 const gravity = 0.5;
@@ -121,9 +123,13 @@ function draw() {
     ctx.drawImage(groundImg, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
     ctx.drawImage(groundImg, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
     
-    ctx.fillStyle = "red";
-    ctx.font = "20px Arial";
-    ctx.fillText(`Lives: ${bird.lives}`, 20, 30);
+    
+    const heartSize = 20;
+    const heartSpacing = 5;
+    for (let i = 0; i < bird.lives; i++) {
+        
+        ctx.fillStyle = "red";
+        ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);    }
     
     index++;
     update();
