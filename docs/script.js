@@ -48,11 +48,7 @@ function resetGame() {
     bird.velocity = 0;
     bird.started = false;
     bird.lives = difficulty === "easy" ? 3 : 1;
-    pipes = Array(3).fill().map((_, i) => {
-        const pipe = [canvas.width + (i * (pipeGap + pipeWidth + pipeDistance / 2)), pipeLoc()];
-        pipe.hit = false; // Add hit property to track if this pipe already took a life
-        return pipe;
-    });
+    pipes = Array(3).fill().map((_, i) => [canvas.width + (i * (pipeGap + pipeWidth + pipeDistance / 2)), pipeLoc()]);
     score = 0;
     updateScoreDisplay();
 }
@@ -66,34 +62,12 @@ document.addEventListener("keydown", (event) => {
 });
 
 function checkCollision() {
-    let hitPipe = false;
+    let hitPipe = pipes.some(pipe => 
+        bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth &&
+        (bird.y - bird.radius < pipe[1] || bird.y + bird.radius > pipe[1] + pipeGap)
+    );
     
-    pipes.forEach(pipe => {
-        // Check collision with this pipe
-        const isColliding = bird.x + bird.radius > pipe[0] && 
-                          bird.x - bird.radius < pipe[0] + pipeWidth &&
-                          (bird.y - bird.radius < pipe[1] || bird.y + bird.radius > pipe[1] + pipeGap);
-        
-        if (isColliding && !pipe.hit) {
-            hitPipe = true;
-            pipe.hit = true; // Mark this pipe as already hit
-            
-            if (difficulty === "easy" && bird.lives > 1) {
-                bird.lives--;
-                bird.velocity = jumpStrength / 2;
-                bird.y -= 20;
-            } else {
-                if (score > bestScore) {
-                    bestScore = score;
-                    localStorage.setItem("bestScore", bestScore);
-                }
-                resetGame();
-            }
-        }
-    });
-    
-    // Check collision with ground or ceiling
-    if (bird.y - bird.radius <= 0 || bird.y + bird.radius >= canvas.height - groundHeight) {
+    if (hitPipe || bird.y - bird.radius <= 0 || bird.y + bird.radius >= canvas.height - groundHeight) {
         if (difficulty === "easy" && bird.lives > 1) {
             bird.lives--;
             bird.velocity = jumpStrength / 2;
@@ -115,11 +89,7 @@ function update() {
 
     pipes.forEach(pipe => pipe[0] -= 2);
     pipes = pipes.filter(pipe => pipe[0] + pipeWidth > 0);
-    if (pipes[pipes.length - 1][0] <= canvas.width - pipeGap) {
-        const newPipe = [canvas.width + pipeDistance, pipeLoc()];
-        newPipe.hit = false; // Initialize hit property for new pipes
-        pipes.push(newPipe);
-    }
+    if (pipes[pipes.length - 1][0] <= canvas.width - pipeGap) pipes.push([canvas.width + pipeDistance, pipeLoc()]);
 
     pipes.forEach(pipe => {
         if (pipe[0] < bird.x - bird.radius && !pipe.passed) {
@@ -153,12 +123,13 @@ function draw() {
     ctx.drawImage(groundImg, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
     ctx.drawImage(groundImg, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
     
-    // Draw hearts for lives
+    
     const heartSize = 20;
     const heartSpacing = 5;
     for (let i = 0; i < bird.lives; i++) {
-        ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
-    }
+        
+        ctx.fillStyle = "red";
+        ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);    }
     
     index++;
     update();
