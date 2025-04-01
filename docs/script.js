@@ -90,15 +90,15 @@ function checkCollision() {
             
             // Odrazový efekt
             if (hitTopPipe) {
-                bird.velocity = Math.abs(bird.velocity) * 0.3; // Odraz dole
-                bird.y += 3; // Posun dole
+                bird.velocity = Math.abs(bird.velocity) * 0.2; // Odraz dole
+                bird.y += 2; // Posun dole
             } 
             else if (hitBottomPipe || hitGround) {
                 bird.velocity = -Math.abs(bird.velocity) * 0.6; // Odraz hore
                 bird.y -= 7; // Posun hore
             }
             else if (hitCeiling) {
-                bird.velocity = 1.0; // Začne padať
+                bird.velocity = 0.8; // Začne padať
             }
         } else {
             if (score > bestScore) {
