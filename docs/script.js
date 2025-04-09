@@ -29,7 +29,7 @@ let pipes = [];
 const pipeLoc = () => (Math.random() * ((canvas.height - (pipeGap + pipeWidth)) - pipeWidth)) + pipeWidth;
 let index = 0;
 let score = 0;
-let bestScore = localStorage.getItem("bestScore") || 0;
+let bestScore = 0;
 const groundHeight = 50;
 let groundX = 0;
 
@@ -76,92 +76,65 @@ document.addEventListener("keydown", (event) => {
 });
 
 function checkCollision() {
-    // Skip collision check if bird is invulnerable (except for ground)
-    if (bird.invulnerable) {
-        // Check only ground collision if invulnerable
-        const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
-        if (hitGround) {
-            if (difficulty === "easy" && bird.lives > 1) {
-                bird.lives--;
-                bird.velocity = -Math.abs(bird.velocity) * 0.3;
-                bird.y -= 10;
-            } else {
-                if (score > bestScore) {
-                    bestScore = score;
-                    localStorage.setItem("bestScore", bestScore);
-                }
-                resetGame();
-            }
-        }
-        return;
-    }
-    
-    let hitTopPipe = false;
-    let hitBottomPipe = false;
-    
-    // Kontrola kolízií s potrubím
+    const hitCeiling = bird.y - bird.radius <= 0;
+    const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
+    const knobMargin = 10;
+
+    let hitPipe = false;
+    let hitKnob = false;
+
     pipes.forEach(pipe => {
-        if (bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth) {
-            if (bird.y - bird.radius < pipe[1]) {
-                hitTopPipe = true;
-            }
-            if (bird.y + bird.radius > pipe[1] + pipeGap) {
-                hitBottomPipe = true;
+        const withinPipeX = bird.x + bird.radius > pipe[0] && bird.x - bird.radius < pipe[0] + pipeWidth;
+
+        if (withinPipeX) {
+            const topPipeBottom = pipe[1];
+            const bottomPipeTop = pipe[1] + pipeGap;
+            const birdTop = bird.y - bird.radius;
+            const birdBottom = bird.y + bird.radius;
+
+            if (
+                (birdTop < topPipeBottom - knobMargin || birdBottom > bottomPipeTop + knobMargin)
+            ) {
+                hitPipe = true;
+            } else if (
+                (birdBottom >= topPipeBottom - knobMargin && birdTop <= topPipeBottom + knobMargin) ||
+                (birdTop <= bottomPipeTop + knobMargin && birdBottom >= bottomPipeTop - knobMargin)
+            ) {
+                hitKnob = true;
             }
         }
     });
-    
-    const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
-    const hitCeiling = bird.y - bird.radius <= 0;
-    
-    if (hitTopPipe || hitBottomPipe || hitCeiling) {
+
+    if (hitGround) {
+        if (difficulty === "easy" || difficulty === "medium") {
+            if (score > bestScore) bestScore = score;
+            resetGame();
+            return;
+        }
+    }
+
+    if (hitPipe || hitCeiling) {
+        if (score > bestScore) bestScore = score;
+        resetGame();
+        return;
+    } else if (hitKnob) {
         if (difficulty === "easy" && bird.lives > 1) {
             bird.lives--;
-            
-            if (hitTopPipe) {
-                bird.velocity = Math.abs(bird.velocity) * 0.15;
-                bird.y += 8;
-            } 
-            else if (hitBottomPipe) {
-                bird.velocity = -Math.abs(bird.velocity) * 0.3;
-                bird.y -= 10;
-            }
-            else if (hitCeiling) {
-                bird.velocity = 0.3;
-            }
-            
-            // 2 seconds of invulnerability (only for pipes/ceiling)
             bird.invulnerable = true;
-            setTimeout(() => { 
-                bird.invulnerable = false; 
-            }, 2000);
-            
+            bird.velocity = -Math.abs(bird.velocity) * 0.3;
+            bird.y -= 10;
+
             bird.blinkInterval = setInterval(() => {
                 bird.visible = !bird.visible;
             }, 100);
+
             setTimeout(() => {
+                bird.invulnerable = false;
                 clearInterval(bird.blinkInterval);
                 bird.visible = true;
             }, 2000);
         } else {
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem("bestScore", bestScore);
-            }
-            resetGame();
-        }
-    }
-    else if (hitGround) {
-        // Ground collision - no invulnerability
-        if (difficulty === "easy" && bird.lives > 1) {
-            bird.lives--;
-            bird.velocity = -Math.abs(bird.velocity) * 0.3;
-            bird.y -= 10;
-        } else {
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem("bestScore", bestScore);
-            }
+            if (score > bestScore) bestScore = score;
             resetGame();
         }
     }
@@ -198,26 +171,25 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height, -(index * 3) % canvas.width, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height, -(index * 3) % canvas.width + canvas.width, 0, canvas.width, canvas.height);
-    
+
     pipes.forEach(pipe => {
         ctx.drawImage(img, 432, 588 - pipe[1], pipeWidth, pipe[1], pipe[0], 0, pipeWidth, pipe[1]);
         ctx.drawImage(img, 432 + pipeWidth, 108, pipeWidth, canvas.height - pipe[1] + pipeGap, pipe[0], pipe[1] + pipeGap, pipeWidth, canvas.height - pipe[1] + pipeGap);
     });
-    
-    // Draw bird only if visible
+
     if (bird.visible || !bird.invulnerable) {
         ctx.drawImage(img, 432, Math.floor((index % 9) / 3) * 36, 51, 36, bird.x, bird.y, 51, 36);
     }
-    
+
     ctx.drawImage(groundImg, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
     ctx.drawImage(groundImg, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
-    
+
     const heartSize = 20;
     const heartSpacing = 5;
     for (let i = 0; i < bird.lives; i++) {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
-    
+
     index++;
     update();
 }
