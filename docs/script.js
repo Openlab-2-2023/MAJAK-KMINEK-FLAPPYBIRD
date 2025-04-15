@@ -82,7 +82,7 @@ function resetGame() {
     bird.hitbox.y = canvas.height / 2;
     if (bird.blinkInterval) clearInterval(bird.blinkInterval);
     pipes = Array(3).fill().map((_, i) => [canvas.width + (i * (pipeGap + pipeWidth + pipeDistance / 2)), pipeLoc()]);
-    hearts = []; // Vymazanie všetkých srdiečok
+    hearts = [];
     pipesPassed = 0;
     score = 0;
     updateScoreDisplay();
@@ -99,14 +99,20 @@ document.addEventListener("keydown", (event) => {
 
 // Funkcia na vytvorenie srdiečka
 function spawnHeart() {
-    const heart = {
-        x: canvas.width,
-        y: Math.random() * (canvas.height - groundHeight - 60) + 30,
-        width: 20,
-        height: 20,
-        collected: false
-    };
-    hearts.push(heart);
+    
+    if (difficulty === "medium" || bird.lives >= 3) return;
+
+    const spawnChance = 0.25; 
+    if (Math.random() < spawnChance) {
+        const heart = {
+            x: canvas.width,
+            y: Math.random() * (canvas.height - groundHeight - 60) + 30,
+            width: 30,
+            height: 30,
+            collected: false
+        };
+        hearts.push(heart);
+    }
 }
 
 // Detekcia kolízie
@@ -159,7 +165,6 @@ function checkCollision() {
     const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
     const hitCeiling = bird.y - bird.radius <= 0;
 
-    // Reakcia na kolíziu
     if (hitTopPipe || hitBottomPipe || hitCeiling) {
         if (difficulty === "medium") {
             if (score > bestScore) {
@@ -174,7 +179,6 @@ function checkCollision() {
             bird.invulnerable = true;
             setTimeout(() => { bird.invulnerable = false; }, 1000);
 
-            // Blikanie vtáka
             bird.blinkInterval = setInterval(() => {
                 bird.visible = !bird.visible;
             }, 100);
@@ -191,17 +195,11 @@ function checkCollision() {
             resetGame();
         }
     } else if (hitGround) {
-        if (difficulty === "easy" && bird.lives > 1) {
-            bird.lives--;
-            bird.velocity = -Math.abs(bird.velocity) * 0.3;
-            bird.y -= 10;
-        } else {
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem("bestScore", bestScore);
-            }
-            resetGame();
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem("bestScore", bestScore);
         }
+        resetGame();
     }
 }
 
@@ -219,7 +217,7 @@ function update() {
     pipes = pipes.filter(pipe => pipe[0] + pipeWidth > 0);
     if (pipes[pipes.length - 1][0] <= canvas.width - pipeGap) pipes.push([canvas.width + pipeDistance, pipeLoc()]);
 
-    // Skóre a srdce po 3 rúrkach
+    // Skóre a srdce
     pipes.forEach(pipe => {
         if (pipe[0] + pipeWidth < bird.x && !pipe.passed) {
             pipe.passed = true;
@@ -227,9 +225,7 @@ function update() {
             pipesPassed++;
             updateScoreDisplay();
 
-            if (pipesPassed % 3 === 0) {
-                spawnHeart(); // spawn srdca
-            }
+            spawnHeart();
         }
     });
 
@@ -266,31 +262,25 @@ function updateScoreDisplay() {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Pozadie
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height, -(index * 3) % canvas.width, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height, -(index * 3) % canvas.width + canvas.width, 0, canvas.width, canvas.height);
 
-    // Rúry
     pipes.forEach(pipe => {
         ctx.drawImage(img, 432, 588 - pipe[1], pipeWidth, pipe[1], pipe[0], 0, pipeWidth, pipe[1]);
         ctx.drawImage(img, 432 + pipeWidth, 108, pipeWidth, canvas.height - pipe[1] + pipeGap, pipe[0], pipe[1] + pipeGap, pipeWidth, canvas.height - pipe[1] + pipeGap);
     });
 
-    // Vták
     if (bird.visible || !bird.invulnerable) {
         ctx.drawImage(img, 432, Math.floor((index % 9) / 3) * 36, 51, 36, bird.x, bird.y, 51, 36);
     }
 
-    // Srdcia
     hearts.forEach(heart => {
         ctx.drawImage(heartImg, heart.x, heart.y, heart.width, heart.height);
     });
 
-    // Zem
     ctx.drawImage(groundImg, groundX, canvas.height - groundHeight, canvas.width, groundHeight);
     ctx.drawImage(groundImg, groundX + canvas.width, canvas.height - groundHeight, canvas.width, groundHeight);
 
-    // Životy hore
     const heartSize = 20;
     const heartSpacing = 5;
     for (let i = 0; i < bird.lives; i++) {
