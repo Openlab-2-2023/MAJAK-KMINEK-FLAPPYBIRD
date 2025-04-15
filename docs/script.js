@@ -35,7 +35,7 @@ let pipes = [];
 const pipeLoc = () => (Math.random() * ((canvas.height - (pipeGap + pipeWidth)) - pipeWidth)) + pipeWidth;
 let index = 0;
 let score = 0;
-let bestScore = localStorage.getItem("bestScore") || 0;
+let bestScore = 0;
 const groundHeight = 50;
 let groundX = 0;
 
@@ -161,7 +161,9 @@ function checkCollision() {
             bird.blinkInterval = setInterval(() => {
                 bird.visible = !bird.visible;
             }, 100);
+
             setTimeout(() => {
+                bird.invulnerable = false;
                 clearInterval(bird.blinkInterval);
                 bird.visible = true;
             }, 1000);
@@ -225,7 +227,6 @@ function draw() {
         ctx.drawImage(img, 432, 588 - pipe[1], pipeWidth, pipe[1], pipe[0], 0, pipeWidth, pipe[1]);
         ctx.drawImage(img, 432 + pipeWidth, 108, pipeWidth, canvas.height - pipe[1] + pipeGap, pipe[0], pipe[1] + pipeGap, pipeWidth, canvas.height - pipe[1] + pipeGap);
     });
-
 
     if (bird.visible || !bird.invulnerable) {
         ctx.drawImage(img, 432, Math.floor((index % 9) / 3) * 36, 51, 36, bird.x, bird.y, 51, 36);
