@@ -77,7 +77,7 @@ const setDifficultyPipeGap = () => {
     } else if (difficulty === "medium") {
         pipeGap = 150;
     } else if (difficulty === "hard") {
-        pipeGap = 190; // Menšia medzera pre vyššiu obtiažnosť
+        pipeGap = 150; 
     }
 };
 
@@ -96,14 +96,14 @@ function resetGame() {
     pipes = Array(3).fill().map((_, i) => ({
         x: canvas.width + (i * (pipeGap + pipeWidth + pipeDistance / 2)),
         y: pipeLoc(),
-        direction: Math.random() > 0.5 ? 1 : -1, // Smer pohybu hore alebo dole
-        speed: difficulty === "hard" ? 1.5 : 0 // Rýchlosť pohybu pre hard mód
+        direction: Math.random() > 0.5 ? 1 : -1, 
+        speed: difficulty === "hard" ? 1.5 : 0 
     }));
 
     hearts = [];
     pipesPassed = 0;
     score = 0;
-    pipeSpeedFactor = 1; // Reset rýchlosti stĺpov
+    pipeSpeedFactor = 1; 
     updateScoreDisplay();
 }
 
@@ -221,13 +221,13 @@ function update() {
 
     // Pohyb rúr
     pipes.forEach(pipe => {
-        pipe.x -= 2 * pipeSpeedFactor; // Zrýchlenie pohybu
+        pipe.x -= 2 * pipeSpeedFactor; 
 
         // Pohyb hore a dole pre hard mód
         if (difficulty === "hard") {
-            pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor; // Zohľadnenie zrýchlenia
+            pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor; 
             if (pipe.y <= pipeWidth || pipe.y >= canvas.height - pipeGap - pipeWidth) {
-                pipe.direction *= -1; // Zmena smeru pri dosiahnutí okrajov
+                pipe.direction *= -1; 
             }
         }
     });
@@ -244,7 +244,7 @@ function update() {
 
     // Zvýšenie faktor rýchlosti
     if (difficulty === "hard") {
-        pipeSpeedFactor = 1 + (pipesPassed / 20); // Zvyšovanie rýchlosti
+        pipeSpeedFactor = 1 + (pipesPassed / 20); 
     }
 
     // Skóre a srdce
