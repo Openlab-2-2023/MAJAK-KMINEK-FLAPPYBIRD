@@ -65,7 +65,6 @@ buttons.forEach((btn) => {
         buttons.forEach(b => b.style.background = "#4CAF50");
         btn.style.background = "#ff9800";
         setDifficultyPipeGap();
-        loadBestScore();
         resetGame();
     });
 });
@@ -102,8 +101,9 @@ function resetGame() {
 
     hearts = [];
     pipesPassed = 0;
-    score = 0;
-    pipeSpeedFactor = 1; 
+    score = 0; 
+    pipeSpeedFactor = 1;
+
     updateScoreDisplay();
 }
 
@@ -170,7 +170,7 @@ function checkCollision() {
             bird.hitbox.x < pipeX + pipeWidth;
 
         const hitsTop = bird.hitbox.y < pipeTop + 10;
-        const hitsBottom = bird.hitbox.y + bird.hitbox.height > pipeBottom - 10;
+        const hitsBottom = bird.hitbox.y + bird.hitbox.height > pipeBottom + 5;
 
         if (withinX && (hitsTop || hitsBottom)) {
             hitTopPipe = hitsTop;
@@ -344,7 +344,15 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
+// Resetovanie najlepšieho skóre pri obnovení stránky
+function resetBestScoresOnPageLoad() {
+    bestScores = { easy: 0, medium: 0, hard: 0 }; 
+    localStorage.removeItem("bestScores");
+    updateScoreDisplay();
+}
+
 // Spustenie hry
+resetBestScoresOnPageLoad();
 loadBestScore();
 resetGame();
 gameLoop();
