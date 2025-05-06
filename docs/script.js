@@ -2,7 +2,24 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Načítanie obrázkov
+// Načítanie obrázkov pozadí podľa ročného obdobia
+const seasonBackgrounds = {
+    spring: new Image(),
+    summer: new Image(),
+    autumn: new Image(),
+    winter: new Image()
+};
+seasonBackgrounds.spring.src = "obrazky/spring.png";
+seasonBackgrounds.summer.src = "obrazky/summer.png";
+seasonBackgrounds.autumn.src = "obrazky/autumn.png";
+seasonBackgrounds.winter.src = "obrazky/winter.png";
+
+// Aktuálne ročné obdobie
+const seasons = ["spring", "summer", "autumn", "winter"];
+let currentSeasonIndex = 0;
+let currentSeason = seasons[currentSeasonIndex];
+
+// Ostatné obrázky
 const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 const groundImg = new Image();
@@ -47,15 +64,11 @@ let bestScores = {
 const groundHeight = 50;
 let groundX = 0;
 
-// Ťažkosť a tlačidlá
 let difficulty = "medium";
 const buttons = document.querySelectorAll("button");
 
-// Srdcia a počítadlo rúrok
 let hearts = [];
 let pipesPassed = 0;
-
-// Premenná na zrýchlenie stĺpov
 let pipeSpeedFactor = 1;
 
 // Nastavenie medzery podľa obtiažnosti
@@ -69,18 +82,14 @@ buttons.forEach((btn) => {
     });
 });
 
-// Nastavenie medzery podľa obtiažnosti
 const setDifficultyPipeGap = () => {
     if (difficulty === "easy") {
         pipeGap = 170;
-    } else if (difficulty === "medium") {
+    } else {
         pipeGap = 150;
-    } else if (difficulty === "hard") {
-        pipeGap = 150; 
     }
 };
 
-// Funkcia na resetovanie hry
 function resetGame() {
     bird.y = canvas.height / 2;
     bird.velocity = 0;
@@ -95,19 +104,21 @@ function resetGame() {
     pipes = Array(3).fill().map((_, i) => ({
         x: canvas.width + (i * (pipeGap + pipeWidth + pipeDistance / 2)),
         y: pipeLoc(),
-        direction: Math.random() > 0.5 ? 1 : -1, 
-        speed: difficulty === "hard" ? 1.5 : 0 
+        direction: Math.random() > 0.5 ? 1 : -1,
+        speed: difficulty === "hard" ? 1.5 : 0
     }));
 
     hearts = [];
     pipesPassed = 0;
-    score = 0; 
+    score = 0;
     pipeSpeedFactor = 1;
+
+    currentSeasonIndex = 0;
+    currentSeason = seasons[currentSeasonIndex];
 
     updateScoreDisplay();
 }
 
-// Skok cez medzerník
 document.addEventListener("keydown", (event) => {
     if (event.code === "Space") {
         event.preventDefault();
@@ -116,12 +127,9 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-// Funkcia na vytvorenie srdiečka
 function spawnHeart() {
-    // Srdcia sa nespawnujú v režimoch medium a hard
-    if (difficulty === "medium" || difficulty === "hard" || bird.lives >= 3) return;
-
-    const spawnChance = 0.25; 
+    if (difficulty !== "easy" || bird.lives >= 3) return;
+    const spawnChance = 0.25;
     if (Math.random() < spawnChance) {
         const heart = {
             x: canvas.width,
@@ -134,7 +142,6 @@ function spawnHeart() {
     }
 }
 
-// Detekcia kolízie
 function checkCollision() {
     const pipeHitbox = {
         x: bird.hitbox.x - bird.radius,
@@ -210,7 +217,6 @@ function checkCollision() {
     }
 }
 
-// Herná logika
 function update() {
     if (!bird.started) return;
 
@@ -219,15 +225,12 @@ function update() {
     bird.hitbox.x = bird.x;
     bird.hitbox.y = bird.y;
 
-    // Pohyb rúr
     pipes.forEach(pipe => {
-        pipe.x -= 2 * pipeSpeedFactor; 
-
-        // Pohyb hore a dole pre hard mód
+        pipe.x -= 2 * pipeSpeedFactor;
         if (difficulty === "hard") {
-            pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor; 
+            pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor;
             if (pipe.y <= pipeWidth || pipe.y >= canvas.height - pipeGap - pipeWidth) {
-                pipe.direction *= -1; 
+                pipe.direction *= -1;
             }
         }
     });
@@ -242,24 +245,25 @@ function update() {
         });
     }
 
-    // Zvýšenie faktor rýchlosti
     if (difficulty === "hard") {
-        pipeSpeedFactor = 1 + (pipesPassed / 20); 
+        pipeSpeedFactor = 1 + (pipesPassed / 20);
     }
 
-    // Skóre a srdce
     pipes.forEach(pipe => {
         if (pipe.x + pipeWidth < bird.x && !pipe.passed) {
             pipe.passed = true;
             score++;
             pipesPassed++;
             updateScoreDisplay();
-
             spawnHeart();
+
+            if (pipesPassed % 10 === 0) {
+                currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
+                currentSeason = seasons[currentSeasonIndex];
+            }
         }
     });
 
-    // Pohyb a zber srdiečok
     hearts.forEach(heart => {
         heart.x -= 2;
         if (!heart.collected &&
@@ -275,14 +279,12 @@ function update() {
 
     hearts = hearts.filter(heart => heart.x + heart.width > 0 && !heart.collected);
 
-    // Pohyb zeme
     groundX -= 2;
     if (groundX <= -canvas.width) groundX = 0;
 
     checkCollision();
 }
 
-// Uloženie najlepšieho skóre
 function saveBestScore() {
     if (score > bestScores[difficulty]) {
         bestScores[difficulty] = score;
@@ -290,7 +292,6 @@ function saveBestScore() {
     }
 }
 
-// Načítanie najlepšieho skóre
 function loadBestScore() {
     const storedScores = JSON.parse(localStorage.getItem("bestScores"));
     if (storedScores) {
@@ -299,18 +300,16 @@ function loadBestScore() {
     updateScoreDisplay();
 }
 
-// Aktualizácia skóre na obrazovke
 function updateScoreDisplay() {
     document.getElementById("currentScore").textContent = score;
     document.getElementById("bestScore").textContent = bestScores[difficulty];
 }
 
-// Vykreslenie všetkého
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height, -(index * 3) % canvas.width, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height, -(index * 3) % canvas.width + canvas.width, 0, canvas.width, canvas.height);
+    const backgroundImg = seasonBackgrounds[currentSeason];
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
     pipes.forEach(pipe => {
         ctx.drawImage(img, 432, 588 - pipe.y, pipeWidth, pipe.y, pipe.x, 0, pipeWidth, pipe.y);
@@ -338,20 +337,17 @@ function draw() {
     update();
 }
 
-// Hlavný loop
 function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-// Resetovanie najlepšieho skóre pri obnovení stránky
 function resetBestScoresOnPageLoad() {
-    bestScores = { easy: 0, medium: 0, hard: 0 }; 
+    bestScores = { easy: 0, medium: 0, hard: 0 };
     localStorage.removeItem("bestScores");
     updateScoreDisplay();
 }
 
-// Spustenie hry
 resetBestScoresOnPageLoad();
 loadBestScore();
 resetGame();
