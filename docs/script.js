@@ -23,7 +23,6 @@ let currentSeason = seasons[currentSeasonIndex];
 const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 const groundImg = new Image();
-groundImg.src = "obrazky/base.png";
 const heartImg = new Image();
 heartImg.src = "obrazky/image.png";
 
@@ -61,7 +60,7 @@ let bestScores = {
     medium: 0,
     hard: 0
 };
-const groundHeight = 50;
+const groundHeight = 130; // Nastavenie výšky zeme na 130px
 let groundX = 0;
 
 let difficulty = "medium";
@@ -143,16 +142,8 @@ function spawnHeart() {
 }
 
 function checkCollision() {
-    const pipeHitbox = {
-        x: bird.hitbox.x - bird.radius,
-        y: bird.hitbox.y - bird.radius,
-        width: bird.hitbox.width + bird.radius * 2,
-        height: bird.hitbox.height + bird.radius * 2
-    };
-
     if (bird.invulnerable) {
-        const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
-        if (hitGround) {
+        if (bird.y + bird.radius >= canvas.height - groundHeight) {
             if (difficulty === "easy" && bird.lives > 1) {
                 bird.lives--;
                 bird.velocity = -Math.abs(bird.velocity) * 0.3;
