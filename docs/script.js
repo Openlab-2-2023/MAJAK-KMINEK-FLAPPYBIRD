@@ -14,17 +14,45 @@ seasonBackgrounds.summer.src = "obrazky/summer.png";
 seasonBackgrounds.autumn.src = "obrazky/autumn.png";
 seasonBackgrounds.winter.src = "obrazky/winter.png";
 
-// Aktuálne ročné obdobie
-const seasons = ["spring", "summer", "autumn", "winter"];
-let currentSeasonIndex = 0;
-let currentSeason = seasons[currentSeasonIndex];
-
 // Ostatné obrázky
 const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 const groundImg = new Image();
 const heartImg = new Image();
 heartImg.src = "obrazky/image.png";
+
+// Herné premenné
+const gravity = 0.5;
+const jumpStrength = -8;
+let pipeGap = 135;
+const pipeWidth = 78;
+const pipeDistance = 250;
+
+// ✅ Upravené: výška zeme
+const groundHeight = 130;
+let groundX = 0;
+
+// ✅ Upravené: výpočet pozície rúrky – rešpektuje zem
+const pipeLoc = () => {
+    const minPipeY = pipeWidth;
+    const maxPipeY = canvas.height - groundHeight - pipeGap - pipeWidth;
+    return Math.random() * (maxPipeY - minPipeY) + minPipeY;
+};
+
+let pipes = [];
+let index = 0;
+let score = 0;
+let bestScores = {
+    easy: 0,
+    medium: 0,
+    hard: 0
+};
+let difficulty = "medium";
+const buttons = document.querySelectorAll("button");
+
+let hearts = [];
+let pipesPassed = 0;
+let pipeSpeedFactor = 1;
 
 // Vlastnosti vtáka
 let bird = {
@@ -45,39 +73,11 @@ let bird = {
     }
 };
 
-// Herné premenné
-const gravity = 0.5;
-const jumpStrength = -8;
-let pipeGap = 135;
-const pipeWidth = 78;
-const pipeDistance = 250;
-const groundHeight = 130;
-let index = 0;
-let score = 0;
-let bestScores = {
-    easy: 0,
-    medium: 0,
-    hard: 0
-};
-let groundX = 0;
-let pipes = [];
+// Sezóny
+const seasons = ["spring", "summer", "autumn", "winter"];
+let currentSeasonIndex = 0;
+let currentSeason = seasons[currentSeasonIndex];
 
-let difficulty = "medium";
-const buttons = document.querySelectorAll("button");
-
-let hearts = [];
-let pipesPassed = 0;
-let pipeSpeedFactor = 1;
-let backgroundX = 0; // Premenná pre posúvanie pozadia
-
-// Nové pipeLoc() pre správne rozmedzie trubiek
-const pipeLoc = () => {
-    const minTop = 50;
-    const maxTop = canvas.height - groundHeight - pipeGap - 50;
-    return Math.random() * (maxTop - minTop) + minTop;
-};
-
-// Nastavenie medzery podľa obtiažnosti
 buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
         difficulty = btn.textContent.toLowerCase();
@@ -89,7 +89,11 @@ buttons.forEach((btn) => {
 });
 
 const setDifficultyPipeGap = () => {
-    pipeGap = difficulty === "easy" ? 170 : 150;
+    if (difficulty === "easy") {
+        pipeGap = 170;
+    } else {
+        pipeGap = 150;
+    }
 };
 
 function resetGame() {
@@ -145,8 +149,16 @@ function spawnHeart() {
 }
 
 function checkCollision() {
+    const pipeHitbox = {
+        x: bird.hitbox.x - bird.radius,
+        y: bird.hitbox.y - bird.radius,
+        width: bird.hitbox.width + bird.radius * 2,
+        height: bird.hitbox.height + bird.radius * 2
+    };
+
     if (bird.invulnerable) {
-        if (bird.y + bird.radius >= canvas.height - groundHeight) {
+        const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
+        if (hitGround) {
             if (difficulty === "easy" && bird.lives > 1) {
                 bird.lives--;
                 bird.velocity = -Math.abs(bird.velocity) * 0.3;
@@ -219,14 +231,11 @@ function update() {
     bird.hitbox.x = bird.x;
     bird.hitbox.y = bird.y;
 
-    backgroundX -= 1.5; // pohyb pozadia
-    if (backgroundX <= -canvas.width) backgroundX = 0;
-
     pipes.forEach(pipe => {
         pipe.x -= 2 * pipeSpeedFactor;
         if (difficulty === "hard") {
             pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor;
-            if (pipe.y <= 50 || pipe.y >= canvas.height - groundHeight - pipeGap - 50) {
+            if (pipe.y <= pipeWidth || pipe.y >= canvas.height - groundHeight - pipeGap - pipeWidth) {
                 pipe.direction *= -1;
             }
         }
@@ -302,34 +311,39 @@ function updateScoreDisplay() {
     document.getElementById("bestScore").textContent = bestScores[difficulty];
 }
 
+// Pohyb pozadia
+let backgroundX = 0;
+let isBirdMoving = false;
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Posúvajúce sa pozadie
+    // Pozadie sa pohybuje len ak sa vták pohybuje
+    if (bird.velocity !== 0) {
+        isBirdMoving = true;
+    } else {
+        isBirdMoving = false;
+    }
+
     const backgroundImg = seasonBackgrounds[currentSeason];
+
+    // Pohyb pozadia len ak je vták v pohybe
+    if (isBirdMoving) {
+        backgroundX -= 1;
+    }
+
+    // Cyklický pohyb pozadia
+    if (backgroundX <= -canvas.width) {
+        backgroundX = 0;
+    }
+
+    // Zobrazenie pozadia
     ctx.drawImage(backgroundImg, backgroundX, 0, canvas.width, canvas.height);
     ctx.drawImage(backgroundImg, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
     pipes.forEach(pipe => {
-        // Horná trubka
         ctx.drawImage(img, 432, 588 - pipe.y, pipeWidth, pipe.y, pipe.x, 0, pipeWidth, pipe.y);
-
-       
-        let bottomPipeOffset = 50;
-        let bottomPipeHeight = canvas.height - groundHeight - (pipe.y + pipeGap) - bottomPipeOffset;
-
-        ctx.drawImage(
-            img,
-            432 + pipeWidth,
-            115,
-            pipeWidth,
-            bottomPipeHeight,
-            pipe.x,
-            pipe.y + pipeGap + bottomPipeOffset,
-            pipeWidth,
-            bottomPipeHeight
-        );
+        ctx.drawImage(img, 432 + pipeWidth, 108, pipeWidth, canvas.height - groundHeight - pipe.y - pipeGap, pipe.x, pipe.y + pipeGap, pipeWidth, canvas.height -118 - pipe.y - pipeGap);
     });
 
     if (bird.visible || !bird.invulnerable) {
