@@ -318,11 +318,10 @@ let isBirdMoving = false;
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Pozadie sa pohybuje len ak sa vták pohybuje
     if (bird.velocity !== 0) {
         isBirdMoving = true;
     } else {
-        isBirdMoving = false;
+        isBirdMoving = true;
     }
 
     const backgroundImg = seasonBackgrounds[currentSeason];
