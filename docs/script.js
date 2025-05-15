@@ -263,7 +263,7 @@ function update() {
             updateScoreDisplay();
             spawnHeart();
 
-            if (pipesPassed % 10 === 0) {
+            if (pipesPassed % 2 === 0) {
                 currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
                 currentSeason = seasons[currentSeasonIndex];
             }
@@ -326,6 +326,7 @@ function draw() {
 
     const backgroundImg = seasonBackgrounds[currentSeason];
 
+
     // Pohyb pozadia len ak je vták v pohybe
     if (isBirdMoving) {
         backgroundX -= 1;
@@ -362,8 +363,20 @@ function draw() {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
 
+    if (!bird.started) {
+        const opacity = 0.5 + 0.5 * Math.sin(Date.now() / 300);
+        ctx.save();
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 30px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("TAP SPACE TO START", canvas.width / 2, canvas.height / 2 - 50);
+        ctx.restore();
+    }
+
     index++;
     update();
+
 }
 
 function gameLoop() {
