@@ -1,8 +1,6 @@
-// Vytvorenie canvasu a kontextu
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-// Načítanie obrázkov pozadí podľa ročného obdobia
 const seasonBackgrounds = {
     spring: new Image(),
     summer: new Image(),
@@ -14,25 +12,21 @@ seasonBackgrounds.summer.src = "obrazky/summer.png";
 seasonBackgrounds.autumn.src = "obrazky/autumn.png";
 seasonBackgrounds.winter.src = "obrazky/winter.png";
 
-// Ostatné obrázky
 const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 const groundImg = new Image();
 const heartImg = new Image();
 heartImg.src = "obrazky/image.png";
 
-// Herné premenné
 const gravity = 0.5;
 const jumpStrength = -8;
 let pipeGap = 135;
 const pipeWidth = 78;
 const pipeDistance = 250;
 
-// ✅ Upravené: výška zeme
 const groundHeight = 130;
 let groundX = 0;
 
-// ✅ Upravené: výpočet pozície rúrky – rešpektuje zem
 const pipeLoc = () => {
     const minPipeY = pipeWidth;
     const maxPipeY = canvas.height - groundHeight - pipeGap - pipeWidth;
@@ -54,7 +48,9 @@ let hearts = [];
 let pipesPassed = 0;
 let pipeSpeedFactor = 1;
 
-// Vlastnosti vtáka
+let gameOver = false;
+let newBest = false;
+
 let bird = {
     x: 183,
     y: canvas.height / 2,
@@ -73,7 +69,6 @@ let bird = {
     }
 };
 
-// Sezóny
 const seasons = ["spring", "summer", "autumn", "winter"];
 let currentSeasonIndex = 0;
 let currentSeason = seasons[currentSeasonIndex];
@@ -89,14 +84,12 @@ buttons.forEach((btn) => {
 });
 
 const setDifficultyPipeGap = () => {
-    if (difficulty === "easy") {
-        pipeGap = 170;
-    } else {
-        pipeGap = 150;
-    }
+    pipeGap = (difficulty === "easy") ? 170 : 150;
 };
 
 function resetGame() {
+    gameOver = false;
+    newBest = false;
     bird.y = canvas.height / 2;
     bird.velocity = 0;
     bird.started = false;
@@ -118,7 +111,6 @@ function resetGame() {
     pipesPassed = 0;
     score = 0;
     pipeSpeedFactor = 1;
-
     currentSeasonIndex = 0;
     currentSeason = seasons[currentSeasonIndex];
 
@@ -128,6 +120,10 @@ function resetGame() {
 document.addEventListener("keydown", (event) => {
     if (event.code === "Space") {
         event.preventDefault();
+        if (gameOver) {
+            resetGame();
+            return;
+        }
         if (!bird.started) bird.started = true;
         bird.velocity = jumpStrength;
     }
@@ -135,16 +131,14 @@ document.addEventListener("keydown", (event) => {
 
 function spawnHeart() {
     if (difficulty !== "easy" || bird.lives >= 3) return;
-    const spawnChance = 0.25;
-    if (Math.random() < spawnChance) {
-        const heart = {
+    if (Math.random() < 0.25) {
+        hearts.push({
             x: canvas.width,
             y: Math.random() * (canvas.height - groundHeight - 60) + 30,
             width: 30,
             height: 30,
             collected: false
-        };
-        hearts.push(heart);
+        });
     }
 }
 
@@ -157,15 +151,14 @@ function checkCollision() {
     };
 
     if (bird.invulnerable) {
-        const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
-        if (hitGround) {
+        if (bird.y + bird.radius >= canvas.height - groundHeight) {
             if (difficulty === "easy" && bird.lives > 1) {
                 bird.lives--;
                 bird.velocity = -Math.abs(bird.velocity) * 0.3;
                 bird.y -= 10;
             } else {
                 saveBestScore();
-                resetGame();
+                gameOver = true;
             }
         }
         return;
@@ -194,10 +187,10 @@ function checkCollision() {
     const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
     const hitCeiling = bird.y - bird.radius <= 0;
 
-    if (hitTopPipe || hitBottomPipe || hitCeiling) {
+    if (hitTopPipe || hitBottomPipe || hitCeiling || hitGround) {
         if (difficulty === "medium") {
             saveBestScore();
-            resetGame();
+            gameOver = true;
         } else if (difficulty === "easy" && bird.lives > 1) {
             bird.lives--;
             bird.velocity = -Math.abs(bird.velocity) * 0.3;
@@ -215,16 +208,13 @@ function checkCollision() {
             }, 1000);
         } else {
             saveBestScore();
-            resetGame();
+            gameOver = true;
         }
-    } else if (hitGround) {
-        saveBestScore();
-        resetGame();
     }
 }
 
 function update() {
-    if (!bird.started) return;
+    if (!bird.started || gameOver) return;
 
     bird.velocity += gravity;
     bird.y += bird.velocity;
@@ -263,7 +253,7 @@ function update() {
             updateScoreDisplay();
             spawnHeart();
 
-            if (pipesPassed % 2 === 0) {
+            if (pipesPassed % 5 === 0) {
                 currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
                 currentSeason = seasons[currentSeasonIndex];
             }
@@ -295,6 +285,9 @@ function saveBestScore() {
     if (score > bestScores[difficulty]) {
         bestScores[difficulty] = score;
         localStorage.setItem("bestScores", JSON.stringify(bestScores));
+        newBest = true;
+    } else {
+        newBest = false;
     }
 }
 
@@ -311,33 +304,14 @@ function updateScoreDisplay() {
     document.getElementById("bestScore").textContent = bestScores[difficulty];
 }
 
-// Pohyb pozadia
 let backgroundX = 0;
-let isBirdMoving = false;
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (bird.velocity !== 0) {
-        isBirdMoving = true;
-    } else {
-        isBirdMoving = true;
-    }
-
     const backgroundImg = seasonBackgrounds[currentSeason];
-
-
-    // Pohyb pozadia len ak je vták v pohybe
-    if (isBirdMoving) {
-        backgroundX -= 1;
-    }
-
-    // Cyklický pohyb pozadia
-    if (backgroundX <= -canvas.width) {
-        backgroundX = 0;
-    }
-
-    // Zobrazenie pozadia
+    backgroundX -= 1;
+    if (backgroundX <= -canvas.width) backgroundX = 0;
     ctx.drawImage(backgroundImg, backgroundX, 0, canvas.width, canvas.height);
     ctx.drawImage(backgroundImg, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
@@ -363,20 +337,36 @@ function draw() {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
 
-    if (!bird.started) {
-        const opacity = 0.5 + 0.5 * Math.sin(Date.now() / 300);
-        ctx.save();
-        ctx.globalAlpha = opacity;
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 30px Arial";
+    if (!bird.started && !gameOver) {
+        ctx.font = "bold 28px Arial";
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + 0.5 * Math.sin(Date.now() / 400)})`;
         ctx.textAlign = "center";
         ctx.fillText("TAP SPACE TO START", canvas.width / 2, canvas.height / 2 - 50);
+    }
+
+    if (gameOver) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.font = "bold 36px Arial";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
+        ctx.font = "24px Arial";
+        ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(`Best: ${bestScores[difficulty]}`, canvas.width / 2, canvas.height / 2 + 40);
+        if (newBest) {
+            ctx.fillStyle = "#FFD700";
+            ctx.font = "bold 22px Arial";
+            ctx.fillText("NEW BEST SCORE! 🎉", canvas.width / 2, canvas.height / 2 + 80);
+        }
         ctx.restore();
+        return;
     }
 
     index++;
     update();
-
 }
 
 function gameLoop() {
