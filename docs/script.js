@@ -23,8 +23,8 @@ const jumpStrength = -8;
 let pipeGap = 135;
 const pipeWidth = 78;
 const pipeDistance = 250;
-
 const groundHeight = 130;
+
 let groundX = 0;
 
 const pipeLoc = () => {
@@ -36,11 +36,7 @@ const pipeLoc = () => {
 let pipes = [];
 let index = 0;
 let score = 0;
-let bestScores = {
-    easy: 0,
-    medium: 0,
-    hard: 0
-};
+let bestScores = { easy: 0, medium: 0, hard: 0 };
 let difficulty = "medium";
 const buttons = document.querySelectorAll("button");
 
@@ -72,6 +68,12 @@ let bird = {
 const seasons = ["spring", "summer", "autumn", "winter"];
 let currentSeasonIndex = 0;
 let currentSeason = seasons[currentSeasonIndex];
+
+// Sezónny preblik
+let seasonTransitioning = false;
+let seasonTransitionAlpha = 0;
+let seasonTransitionTimer = 0;
+const SEASON_TRANSITION_DURATION = 30;
 
 buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -253,9 +255,17 @@ function update() {
             updateScoreDisplay();
             spawnHeart();
 
-            if (pipesPassed % 5 === 0) {
-                currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
-                currentSeason = seasons[currentSeasonIndex];
+            if (pipesPassed % 5 === 0 && !seasonTransitioning) {
+                seasonTransitioning = true;
+                seasonTransitionAlpha = 0;
+                seasonTransitionTimer = 0;
+                setTimeout(() => {
+                    currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
+                    currentSeason = seasons[currentSeasonIndex];
+                }, 250);
+                setTimeout(() => {
+                    seasonTransitioning = false;
+                }, 500);
             }
         }
     });
@@ -278,7 +288,9 @@ function update() {
     groundX -= 2;
     if (groundX <= -canvas.width) groundX = 0;
 
-    checkCollision();
+    if (!seasonTransitioning) {
+        checkCollision();
+    }
 }
 
 function saveBestScore() {
@@ -315,10 +327,12 @@ function draw() {
     ctx.drawImage(backgroundImg, backgroundX, 0, canvas.width, canvas.height);
     ctx.drawImage(backgroundImg, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
-    pipes.forEach(pipe => {
-        ctx.drawImage(img, 432, 588 - pipe.y, pipeWidth, pipe.y, pipe.x, 0, pipeWidth, pipe.y);
-        ctx.drawImage(img, 432 + pipeWidth, 108, pipeWidth, canvas.height - groundHeight - pipe.y - pipeGap, pipe.x, pipe.y + pipeGap, pipeWidth, canvas.height -118 - pipe.y - pipeGap);
-    });
+    if (!seasonTransitioning) {
+        pipes.forEach(pipe => {
+            ctx.drawImage(img, 432, 588 - pipe.y, pipeWidth, pipe.y, pipe.x, 0, pipeWidth, pipe.y);
+            ctx.drawImage(img, 432 + pipeWidth, 108, pipeWidth, canvas.height - groundHeight - pipe.y - pipeGap, pipe.x, pipe.y + pipeGap, pipeWidth, canvas.height - 118 - pipe.y - pipeGap);
+        });
+    }
 
     if (bird.visible || !bird.invulnerable) {
         ctx.drawImage(img, 432, Math.floor((index % 9) / 3) * 36, 51, 36, bird.x, bird.y, 51, 36);
@@ -348,7 +362,6 @@ function draw() {
         ctx.save();
         ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
         ctx.font = "bold 36px Arial";
         ctx.fillStyle = "white";
         ctx.textAlign = "center";
@@ -363,6 +376,14 @@ function draw() {
         }
         ctx.restore();
         return;
+    }
+
+    // Biely preblik pri zmene sezóny
+    if (seasonTransitioning) {
+        seasonTransitionTimer++;
+        seasonTransitionAlpha = Math.sin((seasonTransitionTimer / SEASON_TRANSITION_DURATION) * Math.PI);
+        ctx.fillStyle = `rgba(255, 255, 255, ${seasonTransitionAlpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
     index++;

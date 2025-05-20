@@ -5,7 +5,7 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #000000;
+    background-color: #000;
 }
 
 .game-container {
@@ -28,7 +28,6 @@ canvas {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
     position: relative;
-   
 }
 
 button {
@@ -37,13 +36,38 @@ button {
     padding: 10px;
     margin: 5px 0;
     border: none;
-    background: #4CAF50;
+    background: #4caf50;
     color: white;
     cursor: pointer;
     font-size: 16px;
     border-radius: 5px;
+    transition: background 0.3s ease;
 }
 
 button:hover {
     background: #45a049;
+}
+
+button.active {
+    background: #ff9800 !important;
+}
+
+/* Preblik bielej obrazovky pri zmene sezóny */
+@keyframes whiteBlink {
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#seasonFlash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  pointer-events: none;
+  opacity: 0;
+  animation-fill-mode: forwards;
+  z-index: 9999;
 }
