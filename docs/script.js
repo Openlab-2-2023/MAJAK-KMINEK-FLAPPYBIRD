@@ -62,12 +62,13 @@ let bird = {
     visible: true,
     blinkInterval: null,
     hitbox: {
-        x: 183,
-        y: canvas.height / 2,
-        width: 40,
-        height: 36
+        x: 183 + 8, 
+        y: canvas.height / 2 + 6,
+        width: 34,  
+        height: 24 
     }
 };
+
 
 const seasons = ["spring", "summer", "autumn", "winter"];
 let currentSeasonIndex = 0;
@@ -175,8 +176,9 @@ function checkCollision() {
         const withinX = bird.hitbox.x + bird.hitbox.width - 5 > pipeX &&
             bird.hitbox.x < pipeX + pipeWidth;
 
-        const hitsTop = bird.hitbox.y < pipeTop + 10;
-        const hitsBottom = bird.hitbox.y + bird.hitbox.height > pipeBottom + 5;
+        const hitsTop = bird.hitbox.y + 3 < pipeTop + 10;
+        const hitsBottom = bird.hitbox.y + bird.hitbox.height - 3 > pipeBottom - 10;
+
 
         if (withinX && (hitsTop || hitsBottom)) {
             hitTopPipe = hitsTop;
@@ -218,8 +220,8 @@ function update() {
 
     bird.velocity += gravity;
     bird.y += bird.velocity;
-    bird.hitbox.x = bird.x;
-    bird.hitbox.y = bird.y;
+    bird.hitbox.x = bird.x + 8;
+    bird.hitbox.y = bird.y + 6;
 
     pipes.forEach(pipe => {
         pipe.x -= 2 * pipeSpeedFactor;
@@ -307,6 +309,8 @@ function updateScoreDisplay() {
 let backgroundX = 0;
 
 function draw() {
+
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const backgroundImg = seasonBackgrounds[currentSeason];
