@@ -129,52 +129,30 @@ function resetGame() {
 let menuSelectionIndex = 1; 
 
 document.addEventListener("keydown", (event) => {
-    if (!bird.started && !gameOver) {
+    if (!bird.started || gameOver) {
         if (event.code === "ArrowUp") {
             event.preventDefault();
             menuSelectionIndex = (menuSelectionIndex - 1 + 3) % 3;
             difficulty = ["easy", "medium", "hard"][menuSelectionIndex];
+            updateScoreDisplay(); 
         } else if (event.code === "ArrowDown") {
             event.preventDefault();
             menuSelectionIndex = (menuSelectionIndex + 1) % 3;
             difficulty = ["easy", "medium", "hard"][menuSelectionIndex];
-        } else if (event.code === "Enter") {
+            updateScoreDisplay();
+        } else if (event.code === "Space") {
             event.preventDefault();
-            setDifficultyPipeGap();
-            resetGame();
-        }
-    }
-
-    if (event.code === "Space") {
-        event.preventDefault();
-        if (gameOver) {
-            resetGame();
-            return;
-        }
-        if (!bird.started) bird.started = true;
-        bird.velocity = jumpStrength;
-    }
-});
-
-canvas.addEventListener("click", (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    if (!bird.started && !gameOver) {
-        ["easy", "medium", "hard"].forEach((level, i) => {
-            const btnX = canvas.width / 2 - 90;
-            const btnY = 280 + i * 60 - 20;
-            const btnW = 180;
-            const btnH = 40;
-
-            if (x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH) {
-                difficulty = level;
-                menuSelectionIndex = i;
+            if (!bird.started) {
+                difficulty = ["easy", "medium", "hard"][menuSelectionIndex];
                 setDifficultyPipeGap();
                 resetGame();
+                bird.started = true;
             }
-        });
+            bird.velocity = jumpStrength;
+        }
+    } else if (event.code === "Space" && !gameOver) {
+        event.preventDefault();
+        bird.velocity = jumpStrength;
     }
 });
 
@@ -268,67 +246,69 @@ function update() {
     bird.hitbox.x = bird.x;
     bird.hitbox.y = bird.y;
 
-    pipes.forEach(pipe => {
-        pipe.x -= 2 * pipeSpeedFactor;
-        if (difficulty === "hard") {
-            pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor;
-            if (pipe.y <= pipeWidth || pipe.y >= canvas.height - groundHeight - pipeGap - pipeWidth) {
-                pipe.direction *= -1;
+    if (!gameOver) {
+        pipes.forEach(pipe => {
+            pipe.x -= 2 * pipeSpeedFactor;
+            if (difficulty === "hard") {
+                pipe.y += pipe.direction * pipe.speed * pipeSpeedFactor;
+                if (pipe.y <= pipeWidth || pipe.y >= canvas.height - groundHeight - pipeGap - pipeWidth) {
+                    pipe.direction *= -1;
+                }
             }
-        }
-    });
-
-    pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
-    if (pipes[pipes.length - 1].x <= canvas.width - pipeGap) {
-        pipes.push({
-            x: canvas.width + pipeDistance,
-            y: pipeLoc(),
-            direction: Math.random() > 0.5 ? 1 : -1,
-            speed: difficulty === "hard" ? 1.5 : 0
         });
-    }
 
-    if (difficulty === "hard") {
-        pipeSpeedFactor = 1 + (pipesPassed / 20);
-    }
+        pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
+        if (pipes[pipes.length - 1].x <= canvas.width - pipeGap) {
+            pipes.push({
+                x: canvas.width + pipeDistance,
+                y: pipeLoc(),
+                direction: Math.random() > 0.5 ? 1 : -1,
+                speed: difficulty === "hard" ? 1.5 : 0
+            });
+        }
 
-    pipes.forEach(pipe => {
-        if (pipe.x + pipeWidth < bird.x && !pipe.passed) {
-            pipe.passed = true;
-            score++;
-            pipesPassed++;
-            updateScoreDisplay();
-            spawnHeart();
+        if (difficulty === "hard") {
+            pipeSpeedFactor = 1 + (pipesPassed / 20);
+        }
 
-            if (pipesPassed % 5 === 0 && !seasonTransitioning) {
-                seasonTransitioning = true;
-                seasonTransitionAlpha = 0;
-                seasonTransitionTimer = 0;
-                setTimeout(() => {
-                    currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
-                    currentSeason = seasons[currentSeasonIndex];
-                }, 250);
-                setTimeout(() => {
-                    seasonTransitioning = false;
-                }, 500);
+        pipes.forEach(pipe => {
+            if (pipe.x + pipeWidth < bird.x && !pipe.passed) {
+                pipe.passed = true;
+                score++;
+                pipesPassed++;
+                updateScoreDisplay();
+                spawnHeart();
+
+                if (pipesPassed % 5 === 0 && !seasonTransitioning) {
+                    seasonTransitioning = true;
+                    seasonTransitionAlpha = 0;
+                    seasonTransitionTimer = 0;
+                    setTimeout(() => {
+                        currentSeasonIndex = (currentSeasonIndex + 1) % seasons.length;
+                        currentSeason = seasons[currentSeasonIndex];
+                    }, 250);
+                    setTimeout(() => {
+                        seasonTransitioning = false;
+                    }, 500);
+                }
             }
-        }
-    });
+        });
 
-    hearts.forEach(heart => {
-        heart.x -= 2;
-        if (!heart.collected &&
-            bird.x < heart.x + heart.width &&
-            bird.x + bird.hitbox.width > heart.x &&
-            bird.y < heart.y + heart.height &&
-            bird.y + bird.hitbox.height > heart.y
-        ) {
-            heart.collected = true;
-            if (bird.lives < 3) bird.lives++;
-        }
-    });
+        hearts.forEach(heart => {
+            heart.x -= 2;
+            if (!heart.collected &&
+                bird.x < heart.x + heart.width &&
+                bird.x + bird.hitbox.width > heart.x &&
+                bird.y < heart.y + heart.height &&
+                bird.y + bird.hitbox.height > heart.y
+            ) {
+                heart.collected = true;
+                if (bird.lives < 3) bird.lives++;
+            }
+        });
 
-    hearts = hearts.filter(heart => heart.x + heart.width > 0 && !heart.collected);
+        hearts = hearts.filter(heart => heart.x + heart.width > 0 && !heart.collected);
+    }
 
     groundX -= 2;
     if (groundX <= -canvas.width) groundX = 0;
@@ -337,6 +317,7 @@ function update() {
         checkCollision();
     }
 }
+
 
 function saveBestScore() {
     if (score > bestScores[difficulty]) {
@@ -367,8 +348,11 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const backgroundImg = seasonBackgrounds[currentSeason];
+    if (!gameOver) {
     backgroundX -= 1;
     if (backgroundX <= -canvas.width) backgroundX = 0;
+}
+
     ctx.drawImage(backgroundImg, backgroundX, 0, canvas.width, canvas.height);
     ctx.drawImage(backgroundImg, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
@@ -396,7 +380,7 @@ function draw() {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
 
-    // === UPRAVENÉ MENU ===
+    //  MENU 
     if (!bird.started) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(40, 80, canvas.width - 80, 450);
@@ -404,7 +388,7 @@ function draw() {
         ctx.font = "bold 24px 'Press Start 2P'";
         ctx.fillStyle = "#FFF";
         ctx.textAlign = "center";
-        ctx.fillText("FLAPPY SEASONS", canvas.width / 2, 140);
+        ctx.fillText("FLAPPY BIRD", canvas.width / 2, 140);
 
         ctx.font = "14px 'Press Start 2P'";
         ctx.fillText(`Best: ${bestScores[difficulty]}  |  Score: ${score}`, canvas.width / 2, 190);
@@ -419,7 +403,7 @@ function draw() {
             const btnW = 180;
             const btnH = 40;
 
-            // Draw button box
+            // button box
             ctx.fillStyle = isSelected ? "#FFD700" : "#4CAF50";
             ctx.strokeStyle = isSelected ? "#FFA000" : "#2E7D32";
             ctx.lineWidth = 3;
@@ -428,7 +412,7 @@ function draw() {
             ctx.fill();
             ctx.stroke();
 
-            // Button text
+            // text
             ctx.fillStyle = "#FFF";
             ctx.font = "12px 'Press Start 2P'";
             ctx.fillText(level.toUpperCase(), canvas.width / 2, y + 5);
