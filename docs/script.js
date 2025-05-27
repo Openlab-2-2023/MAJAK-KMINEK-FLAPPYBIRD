@@ -72,7 +72,7 @@ const seasons = ["spring", "summer", "autumn", "winter"];
 let currentSeasonIndex = 0;
 let currentSeason = seasons[currentSeasonIndex];
 
-// Sezónny preblik
+
 let seasonTransitioning = false;
 let seasonTransitionAlpha = 0;
 let seasonTransitionTimer = 0;
@@ -380,7 +380,7 @@ function draw() {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
 
-    //  MENU 
+     
     if (!bird.started) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(40, 80, canvas.width - 80, 450);
@@ -403,7 +403,7 @@ function draw() {
             const btnW = 180;
             const btnH = 40;
 
-            // button box
+           
             ctx.fillStyle = isSelected ? "#FFD700" : "#4CAF50";
             ctx.strokeStyle = isSelected ? "#FFA000" : "#2E7D32";
             ctx.lineWidth = 3;
@@ -412,7 +412,7 @@ function draw() {
             ctx.fill();
             ctx.stroke();
 
-            // text
+            
             ctx.fillStyle = "#FFF";
             ctx.font = "12px 'Press Start 2P'";
             ctx.fillText(level.toUpperCase(), canvas.width / 2, y + 5);
