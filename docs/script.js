@@ -195,7 +195,7 @@ function checkCollision() {
         const pipeTop = pipe.y;
         const pipeBottom = pipe.y + pipeGap;
 
-        const withinX = bird.hitbox.x + bird.hitbox.width - 5 > pipeX &&
+        const withinX = bird.hitbox.x + bird.hitbox.width - 10 > pipeX &&
             bird.hitbox.x < pipeX + pipeWidth;
 
         const hitsTop = bird.hitbox.y < pipeTop - 5;
@@ -208,7 +208,9 @@ function checkCollision() {
     });
 
     const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
-    const hitCeiling = bird.y - bird.radius <= 0;
+    if (hitTopPipe || hitBottomPipe || hitGround) 
+
+
 
 if (hitTopPipe || hitBottomPipe || hitCeiling || hitGround) {
     if (difficulty === "medium" || difficulty === "hard" || (difficulty === "easy" && bird.lives <= 1)) {
