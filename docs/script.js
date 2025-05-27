@@ -1,6 +1,9 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+let persistentBestScores = { easy: 0, medium: 0, hard: 0 }; 
+let sessionBestScores = { easy: 0, medium: 0, hard: 0 }; 
+
 const seasonBackgrounds = {
     spring: new Image(),
     summer: new Image(),
@@ -116,10 +119,32 @@ function resetGame() {
     currentSeasonIndex = 0;
     currentSeason = seasons[currentSeasonIndex];
 
+    bird.started = false; 
+    gameOver = false; 
+
+
     updateScoreDisplay();
 }
 
+let menuSelectionIndex = 1; 
+
 document.addEventListener("keydown", (event) => {
+    if (!bird.started && !gameOver) {
+        if (event.code === "ArrowUp") {
+            event.preventDefault();
+            menuSelectionIndex = (menuSelectionIndex - 1 + 3) % 3;
+            difficulty = ["easy", "medium", "hard"][menuSelectionIndex];
+        } else if (event.code === "ArrowDown") {
+            event.preventDefault();
+            menuSelectionIndex = (menuSelectionIndex + 1) % 3;
+            difficulty = ["easy", "medium", "hard"][menuSelectionIndex];
+        } else if (event.code === "Enter") {
+            event.preventDefault();
+            setDifficultyPipeGap();
+            resetGame();
+        }
+    }
+
     if (event.code === "Space") {
         event.preventDefault();
         if (gameOver) {
@@ -130,6 +155,29 @@ document.addEventListener("keydown", (event) => {
         bird.velocity = jumpStrength;
     }
 });
+
+canvas.addEventListener("click", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (!bird.started && !gameOver) {
+        ["easy", "medium", "hard"].forEach((level, i) => {
+            const btnX = canvas.width / 2 - 90;
+            const btnY = 280 + i * 60 - 20;
+            const btnW = 180;
+            const btnH = 40;
+
+            if (x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH) {
+                difficulty = level;
+                menuSelectionIndex = i;
+                setDifficultyPipeGap();
+                resetGame();
+            }
+        });
+    }
+});
+
 
 function spawnHeart() {
     if (difficulty !== "easy" || bird.lives >= 3) return;
@@ -152,19 +200,14 @@ function checkCollision() {
         height: bird.hitbox.height + bird.radius * 2
     };
 
-    if (bird.invulnerable) {
-        if (bird.y + bird.radius >= canvas.height - groundHeight) {
-            if (difficulty === "easy" && bird.lives > 1) {
-                bird.lives--;
-                bird.velocity = -Math.abs(bird.velocity) * 0.3;
-                bird.y -= 10;
-            } else {
-                saveBestScore();
-                gameOver = true;
-            }
-        }
-        return;
-    }
+    if (bird.y + bird.radius >= canvas.height - groundHeight) {
+    saveBestScore();
+    gameOver = true;
+    bird.started = false;
+    return;
+}
+
+
 
     let hitTopPipe = false;
     let hitBottomPipe = false;
@@ -177,7 +220,7 @@ function checkCollision() {
         const withinX = bird.hitbox.x + bird.hitbox.width - 5 > pipeX &&
             bird.hitbox.x < pipeX + pipeWidth;
 
-        const hitsTop = bird.hitbox.y < pipeTop + 10;
+        const hitsTop = bird.hitbox.y < pipeTop - 5;
         const hitsBottom = bird.hitbox.y + bird.hitbox.height > pipeBottom + 5;
 
         if (withinX && (hitsTop || hitsBottom)) {
@@ -189,28 +232,30 @@ function checkCollision() {
     const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
     const hitCeiling = bird.y - bird.radius <= 0;
 
-    if (hitTopPipe || hitBottomPipe || hitCeiling || hitGround) {
-        if (difficulty === "medium") {
-            saveBestScore();
-            gameOver = true;
-        } else if (difficulty === "easy" && bird.lives > 1) {
-            bird.lives--;
-            bird.velocity = -Math.abs(bird.velocity) * 0.3;
-            bird.y -= 10;
-            bird.invulnerable = true;
-            setTimeout(() => { bird.invulnerable = false; }, 1000);
+if (hitTopPipe || hitBottomPipe || hitCeiling || hitGround) {
+    if (difficulty === "medium" || difficulty === "hard" || (difficulty === "easy" && bird.lives <= 1)) {
+        saveBestScore();
+        gameOver = true;
+        bird.started = false;
+    } else if (difficulty === "easy" && bird.lives > 1) {
+        bird.lives--;
+        bird.velocity = -Math.abs(bird.velocity) * 0.3;
+        bird.y -= 10;
+        bird.invulnerable = true;
+        setTimeout(() => { bird.invulnerable = false; }, 1000);
 
-            bird.blinkInterval = setInterval(() => {
-                bird.visible = !bird.visible;
-            }, 100);
-            setTimeout(() => {
-                bird.invulnerable = false;
-                clearInterval(bird.blinkInterval);
-                bird.visible = true;
-            }, 1000);
-        } else {
-            saveBestScore();
-            gameOver = true;
+        bird.blinkInterval = setInterval(() => {
+            bird.visible = !bird.visible;
+        }, 100);
+        setTimeout(() => {
+            bird.invulnerable = false;
+            clearInterval(bird.blinkInterval);
+            bird.visible = true;
+        }, 1000);
+    } else {
+        saveBestScore();
+        gameOver = true;
+        bird.started = false; 
         }
     }
 }
@@ -351,34 +396,52 @@ function draw() {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
 
-    if (!bird.started && !gameOver) {
-        ctx.font = "bold 28px Arial";
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + 0.5 * Math.sin(Date.now() / 400)})`;
+    // === UPRAVENÉ MENU ===
+    if (!bird.started) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+        ctx.fillRect(40, 80, canvas.width - 80, 450);
+
+        ctx.font = "bold 24px 'Press Start 2P'";
+        ctx.fillStyle = "#FFF";
         ctx.textAlign = "center";
-        ctx.fillText("TAP SPACE TO START", canvas.width / 2, canvas.height / 2 - 50);
+        ctx.fillText("FLAPPY SEASONS", canvas.width / 2, 140);
+
+        ctx.font = "14px 'Press Start 2P'";
+        ctx.fillText(`Best: ${bestScores[difficulty]}  |  Score: ${score}`, canvas.width / 2, 190);
+
+        ctx.fillText("SELECT DIFFICULTY", canvas.width / 2, 240);
+
+        ["easy", "medium", "hard"].forEach((level, i) => {
+            const y = 280 + i * 60;
+            const isSelected = difficulty === level;
+            const btnX = canvas.width / 2 - 90;
+            const btnY = y - 20;
+            const btnW = 180;
+            const btnH = 40;
+
+            // Draw button box
+            ctx.fillStyle = isSelected ? "#FFD700" : "#4CAF50";
+            ctx.strokeStyle = isSelected ? "#FFA000" : "#2E7D32";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.roundRect(btnX, btnY, btnW, btnH, 10);
+            ctx.fill();
+            ctx.stroke();
+
+            // Button text
+            ctx.fillStyle = "#FFF";
+            ctx.font = "12px 'Press Start 2P'";
+            ctx.fillText(level.toUpperCase(), canvas.width / 2, y + 5);
+        });
+
+        ctx.font = "12px 'Press Start 2P'";
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.6 + 0.4 * Math.sin(Date.now() / 300)})`;
+        ctx.fillText("PRESS SPACE TO START", canvas.width / 2, 480);
     }
 
-    if (gameOver) {
-        ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = "bold 36px Arial";
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
-        ctx.font = "24px Arial";
-        ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2);
-        ctx.fillText(`Best: ${bestScores[difficulty]}`, canvas.width / 2, canvas.height / 2 + 40);
-        if (newBest) {
-            ctx.fillStyle = "#FFD700";
-            ctx.font = "bold 22px Arial";
-            ctx.fillText("NEW BEST SCORE! 🎉", canvas.width / 2, canvas.height / 2 + 80);
-        }
-        ctx.restore();
-        return;
-    }
+    
+    
 
-    // Biely preblik pri zmene sezóny
     if (seasonTransitioning) {
         seasonTransitionTimer++;
         seasonTransitionAlpha = Math.sin((seasonTransitionTimer / SEASON_TRANSITION_DURATION) * Math.PI);
@@ -400,6 +463,8 @@ function resetBestScoresOnPageLoad() {
     localStorage.removeItem("bestScores");
     updateScoreDisplay();
 }
+
+
 
 resetBestScoresOnPageLoad();
 loadBestScore();
