@@ -47,12 +47,7 @@ button.active {
     background: #ff9800 !important;
 }
 
-/* Preblik bielej obrazovky pri zmene sezóny */
-@keyframes whiteBlink {
-  0%   { opacity: 0; }
-  50%  { opacity: 1; }
-  100% { opacity: 0; }
-}
+
 
 #seasonFlash {
   position: fixed;
