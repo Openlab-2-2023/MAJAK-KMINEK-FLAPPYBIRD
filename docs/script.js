@@ -19,7 +19,7 @@ const img = new Image();
 img.src = "https://i.ibb.co/Q9yv5Jk/flappy-bird-set.png";
 const groundImg = new Image();
 const heartImg = new Image();
-heartImg.src = "obrazky/image.png";
+heartImg.src = "obrazky/heart.png";
 
 const gravity = 0.5;
 const jumpStrength = -8;
