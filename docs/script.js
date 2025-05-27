@@ -212,7 +212,8 @@ function checkCollision() {
 
 
 
-if (hitTopPipe || hitBottomPipe || hitCeiling || hitGround) {
+if (!bird.invulnerable && (hitTopPipe || hitBottomPipe || hitGround)) {
+
     if (difficulty === "medium" || difficulty === "hard" || (difficulty === "easy" && bird.lives <= 1)) {
         saveBestScore();
         gameOver = true;
@@ -281,7 +282,7 @@ function update() {
                 updateScoreDisplay();
                 spawnHeart();
 
-                if (pipesPassed % 10 === 0 && !seasonTransitioning) {
+                if (pipesPassed % 3 === 0 && !seasonTransitioning) {
                     seasonTransitioning = true;
                     seasonTransitionAlpha = 0;
                     seasonTransitionTimer = 0;
