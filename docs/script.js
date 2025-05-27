@@ -279,7 +279,7 @@ function update() {
                 updateScoreDisplay();
                 spawnHeart();
 
-                if (pipesPassed % 5 === 0 && !seasonTransitioning) {
+                if (pipesPassed % 10 === 0 && !seasonTransitioning) {
                     seasonTransitioning = true;
                     seasonTransitionAlpha = 0;
                     seasonTransitionTimer = 0;
