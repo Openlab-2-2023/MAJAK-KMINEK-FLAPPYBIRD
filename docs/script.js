@@ -436,6 +436,25 @@ function draw() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    if (bird.started && !gameOver) {
+    ctx.font = "14px 'Press Start 2P'";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "right";
+
+    
+    ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur = 4;
+
+    ctx.fillText(`Score: ${score}`, canvas.width - 20, 30);
+    ctx.fillText(`Best: ${bestScores[difficulty]}`, canvas.width - 20, 50);
+
+    
+    ctx.shadowColor = "transparent";
+}
+
+
     index++;
     update();
 }
