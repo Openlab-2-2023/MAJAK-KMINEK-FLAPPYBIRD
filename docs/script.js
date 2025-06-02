@@ -198,7 +198,7 @@ function checkCollision() {
         const withinX = bird.hitbox.x + bird.hitbox.width - 10 > pipeX &&
             bird.hitbox.x < pipeX + pipeWidth;
 
-        const hitsTop = bird.hitbox.y < pipeTop - 5;
+        const hitsTop = bird.hitbox.y < pipeTop + 5;
         const hitsBottom = bird.hitbox.y + bird.hitbox.height > pipeBottom + 5;
 
         if (withinX && (hitsTop || hitsBottom)) {
