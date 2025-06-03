@@ -1,8 +1,8 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-let persistentBestScores = { easy: 0, medium: 0, hard: 0 }; 
-let sessionBestScores = { easy: 0, medium: 0, hard: 0 }; 
+let bestScores = { easy: 0, medium: 0, hard: 0 }; // z localStorage
+let sessionBestScores = { easy: 0, medium: 0, hard: 0 }; // len počas hry
 
 const seasonBackgrounds = {
     spring: new Image(),
@@ -39,7 +39,6 @@ const pipeLoc = () => {
 let pipes = [];
 let index = 0;
 let score = 0;
-let bestScores = { easy: 0, medium: 0, hard: 0 };
 let difficulty = "medium";
 const buttons = document.querySelectorAll("button");
 
@@ -71,7 +70,6 @@ let bird = {
 const seasons = ["spring", "summer", "autumn", "winter"];
 let currentSeasonIndex = 0;
 let currentSeason = seasons[currentSeasonIndex];
-
 
 let seasonTransitioning = false;
 let seasonTransitionAlpha = 0;
@@ -119,14 +117,12 @@ function resetGame() {
     currentSeasonIndex = 0;
     currentSeason = seasons[currentSeasonIndex];
 
-    bird.started = false; 
-    gameOver = false; 
-
+    sessionBestScores[difficulty] = 0;
 
     updateScoreDisplay();
 }
 
-let menuSelectionIndex = 1; 
+let menuSelectionIndex = 1;
 
 document.addEventListener("keydown", (event) => {
     if (!bird.started || gameOver) {
@@ -134,7 +130,7 @@ document.addEventListener("keydown", (event) => {
             event.preventDefault();
             menuSelectionIndex = (menuSelectionIndex - 1 + 3) % 3;
             difficulty = ["easy", "medium", "hard"][menuSelectionIndex];
-            updateScoreDisplay(); 
+            updateScoreDisplay();
         } else if (event.code === "ArrowDown") {
             event.preventDefault();
             menuSelectionIndex = (menuSelectionIndex + 1) % 3;
@@ -155,7 +151,6 @@ document.addEventListener("keydown", (event) => {
         bird.velocity = jumpStrength;
     }
 });
-
 
 function spawnHeart() {
     if (difficulty !== "easy" || bird.lives >= 3) return;
@@ -179,13 +174,11 @@ function checkCollision() {
     };
 
     if (bird.y + bird.radius >= canvas.height - groundHeight) {
-    saveBestScore();
-    gameOver = true;
-    bird.started = false;
-    return;
-}
-
-
+        saveBestScore();
+        gameOver = true;
+        bird.started = false;
+        return;
+    }
 
     let hitTopPipe = false;
     let hitBottomPipe = false;
@@ -208,35 +201,31 @@ function checkCollision() {
     });
 
     const hitGround = bird.y + bird.radius >= canvas.height - groundHeight;
-    if (hitTopPipe || hitBottomPipe || hitGround) 
 
+    if (!bird.invulnerable && (hitTopPipe || hitBottomPipe || hitGround)) {
+        if (difficulty === "medium" || difficulty === "hard" || (difficulty === "easy" && bird.lives <= 1)) {
+            saveBestScore();
+            gameOver = true;
+            bird.started = false;
+        } else if (difficulty === "easy" && bird.lives > 1) {
+            bird.lives--;
+            bird.velocity = -Math.abs(bird.velocity) * 0.3;
+            bird.y -= 10;
+            bird.invulnerable = true;
+            setTimeout(() => { bird.invulnerable = false; }, 1000);
 
-
-if (!bird.invulnerable && (hitTopPipe || hitBottomPipe || hitGround)) {
-
-    if (difficulty === "medium" || difficulty === "hard" || (difficulty === "easy" && bird.lives <= 1)) {
-        saveBestScore();
-        gameOver = true;
-        bird.started = false;
-    } else if (difficulty === "easy" && bird.lives > 1) {
-        bird.lives--;
-        bird.velocity = -Math.abs(bird.velocity) * 0.3;
-        bird.y -= 10;
-        bird.invulnerable = true;
-        setTimeout(() => { bird.invulnerable = false; }, 1000);
-
-        bird.blinkInterval = setInterval(() => {
-            bird.visible = !bird.visible;
-        }, 100);
-        setTimeout(() => {
-            bird.invulnerable = false;
-            clearInterval(bird.blinkInterval);
-            bird.visible = true;
-        }, 1000);
-    } else {
-        saveBestScore();
-        gameOver = true;
-        bird.started = false; 
+            bird.blinkInterval = setInterval(() => {
+                bird.visible = !bird.visible;
+            }, 100);
+            setTimeout(() => {
+                bird.invulnerable = false;
+                clearInterval(bird.blinkInterval);
+                bird.visible = true;
+            }, 1000);
+        } else {
+            saveBestScore();
+            gameOver = true;
+            bird.started = false;
         }
     }
 }
@@ -279,6 +268,7 @@ function update() {
                 pipe.passed = true;
                 score++;
                 pipesPassed++;
+                sessionBestScores[difficulty] = Math.max(sessionBestScores[difficulty], score);
                 updateScoreDisplay();
                 spawnHeart();
 
@@ -321,8 +311,9 @@ function update() {
     }
 }
 
-
 function saveBestScore() {
+    sessionBestScores[difficulty] = Math.max(sessionBestScores[difficulty], score);
+
     if (score > bestScores[difficulty]) {
         bestScores[difficulty] = score;
         localStorage.setItem("bestScores", JSON.stringify(bestScores));
@@ -341,8 +332,9 @@ function loadBestScore() {
 }
 
 function updateScoreDisplay() {
+    const displayScore = bird.started ? sessionBestScores[difficulty] : bestScores[difficulty];
     document.getElementById("currentScore").textContent = score;
-    document.getElementById("bestScore").textContent = bestScores[difficulty];
+    document.getElementById("bestScore").textContent = displayScore;
 }
 
 let backgroundX = 0;
@@ -352,9 +344,9 @@ function draw() {
 
     const backgroundImg = seasonBackgrounds[currentSeason];
     if (!gameOver) {
-    backgroundX -= 1;
-    if (backgroundX <= -canvas.width) backgroundX = 0;
-}
+        backgroundX -= 1;
+        if (backgroundX <= -canvas.width) backgroundX = 0;
+    }
 
     ctx.drawImage(backgroundImg, backgroundX, 0, canvas.width, canvas.height);
     ctx.drawImage(backgroundImg, backgroundX + canvas.width, 0, canvas.width, canvas.height);
@@ -383,7 +375,6 @@ function draw() {
         ctx.drawImage(heartImg, 10 + (i * (heartSize + heartSpacing)), 10, heartSize, heartSize);
     }
 
-     
     if (!bird.started) {
         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
         ctx.fillRect(40, 80, canvas.width - 80, 450);
@@ -406,7 +397,6 @@ function draw() {
             const btnW = 180;
             const btnH = 40;
 
-           
             ctx.fillStyle = isSelected ? "#FFD700" : "#4CAF50";
             ctx.strokeStyle = isSelected ? "#FFA000" : "#2E7D32";
             ctx.lineWidth = 3;
@@ -415,7 +405,6 @@ function draw() {
             ctx.fill();
             ctx.stroke();
 
-            
             ctx.fillStyle = "#FFF";
             ctx.font = "12px 'Press Start 2P'";
             ctx.fillText(level.toUpperCase(), canvas.width / 2, y + 5);
@@ -426,9 +415,6 @@ function draw() {
         ctx.fillText("PRESS SPACE TO START", canvas.width / 2, 480);
     }
 
-    
-    
-
     if (seasonTransitioning) {
         seasonTransitionTimer++;
         seasonTransitionAlpha = Math.sin((seasonTransitionTimer / SEASON_TRANSITION_DURATION) * Math.PI);
@@ -437,23 +423,20 @@ function draw() {
     }
 
     if (bird.started && !gameOver) {
-    ctx.font = "14px 'Press Start 2P'";
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "right";
+        ctx.font = "14px 'Press Start 2P'";
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "right";
 
-    
-    ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    ctx.shadowBlur = 4;
+        ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.shadowBlur = 4;
 
-    ctx.fillText(`Score: ${score}`, canvas.width - 20, 30);
-    ctx.fillText(`Best: ${bestScores[difficulty]}`, canvas.width - 20, 50);
+        ctx.fillText(`Score: ${score}`, canvas.width - 20, 30);
+        ctx.fillText(`Best: ${sessionBestScores[difficulty]}`, canvas.width - 20, 50);
 
-    
-    ctx.shadowColor = "transparent";
-}
-
+        ctx.shadowColor = "transparent";
+    }
 
     index++;
     update();
@@ -464,15 +447,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-function resetBestScoresOnPageLoad() {
-    bestScores = { easy: 0, medium: 0, hard: 0 };
-    localStorage.removeItem("bestScores");
-    updateScoreDisplay();
-}
-
-
-
-resetBestScoresOnPageLoad();
 loadBestScore();
 resetGame();
 gameLoop();
