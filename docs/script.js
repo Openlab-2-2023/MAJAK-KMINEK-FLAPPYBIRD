@@ -2,7 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 let bestScores = { easy: 0, medium: 0, hard: 0 }; // z localStorage
-let sessionBestScores = { easy: 0, medium: 0, hard: 0 }; // len počas hry
+let sessionBestScores = { easy: 0, medium: 0, hard: 0 }; // len počas aktuálnej session (celého načítania stránky)
 
 const seasonBackgrounds = {
     spring: new Image(),
@@ -117,10 +117,15 @@ function resetGame() {
     currentSeasonIndex = 0;
     currentSeason = seasons[currentSeasonIndex];
 
-    sessionBestScores[difficulty] = 0;
+    // sessionBestScores[difficulty] = 0; // NESMIE SA RESETOVAŤ PRI RESET HRY!
 
     updateScoreDisplay();
 }
+
+// Reset sessionBestScores len pri reloadnutí stránky (voliteľné, pre istotu):
+window.addEventListener("beforeunload", () => {
+    sessionBestScores = { easy: 0, medium: 0, hard: 0 };
+});
 
 let menuSelectionIndex = 1;
 
@@ -332,6 +337,7 @@ function loadBestScore() {
 }
 
 function updateScoreDisplay() {
+    // V menu (keď bird.started == false) ukazuj bestScores, v hre sessionBestScores
     const displayScore = bird.started ? sessionBestScores[difficulty] : bestScores[difficulty];
     document.getElementById("currentScore").textContent = score;
     document.getElementById("bestScore").textContent = displayScore;
